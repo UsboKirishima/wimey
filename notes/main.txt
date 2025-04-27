@@ -1,0 +1,11 @@
+Main Design
+
+Public Functions:
+1. Each public function must be named with the `wimey_` prefix.
+2. Function names must use snake_case.
+3. Each public function should have comments explaining what it does and what it returns, placed before the declaration.
+4. Default return values should be `WIMEY_SUCCESS` and `WIMEY_ERR`.
+
+Internal Functions:
+1. Internal functions must be named with a double underscore prefix (`__`).
+2. Internal functions should be declared as `static` where possible.

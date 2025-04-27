@@ -1,0 +1,5 @@
+Logs design
+------------
+
+We need to make a simple logs module:
+	1. Functions like 
