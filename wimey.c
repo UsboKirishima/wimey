@@ -16,6 +16,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
+/**
+ * TODO: (DONE) Commands recognition 
+ * TODO: Value parsers es. wimey_val_to_int()
+ * TODO: Prefix config
+ * TODO: "[key]=<value>" or "[key] <value>" config
+ * TODO: Arguments management
+ * */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -130,12 +138,91 @@ int wimey_add_command(struct wimey_command_t cmd) {
 	return WIMEY_OK;
 }
 
+/* Check if a string is a command */
+bool __wimey_is_str_a_command(char *str) {
+	struct __wimey_command_node *current = wimey_get_commands_head();
+	
+	if(current == NULL)
+		return false;
+
+	while(current != NULL) {  
+		if(strncmp(current->cmd.key, str, strlen(current->cmd.key)) == 0)
+			return true;
+		current = current->next;
+	}
+
+	return false;
+}
+
 /* This function returns the head of the commands list
  * or NULL if the list is empty  */
 struct __wimey_command_node *wimey_get_commands_head(void) {
 	return wimey_dict.cmds_head;
 }
 
+/* Process a specific command with its value if needed */
+bool __wimey_process_command(struct __wimey_command_node *cmd_node, char *value) {
+    	if(cmd_node->cmd.has_value) {
+        	cmd_node->cmd.callback(value);
+		return true;
+    	}
+	
+	cmd_node->cmd.callback(NULL);
+    	return true;
+}
+
+/* Internal function that iterates the
+ * command line buffer and search commands.
+ * Then executes callbacks and returns
+ */
+int __wimey_parse_commands_from_buff(int argc, char **argv) {
+	if(argc < 2) {
+		ERR("Argc < 2, but there are commands in the dictionary");
+		goto err;
+	}
+
+	for(int arg_i = 1; arg_i < argc; arg_i++) {
+		struct __wimey_command_node *current = wimey_get_commands_head();
+
+		if(current == NULL) {
+            		ERR("No commands registered in dictionary");
+			goto err;
+        	}
+
+		while(current != NULL) {
+			if(strcmp(current->cmd.key, argv[arg_i]) == 0) {
+                		INFO("Found command: %s", current->cmd.key);
+
+                		if(current->cmd.is_value_required && arg_i + 1 >= argc) {
+                    			ERR("Command %s requires value `%s` but none provided", 
+							current->cmd.key, current->cmd.value_name);
+                    			goto err;
+                		}
+
+                		if(current->cmd.has_value && arg_i + 1 < argc) {
+                    			if(!__wimey_is_str_a_command(argv[arg_i + 1])) {
+                        			__wimey_process_command(current, argv[arg_i + 1]);
+                        			arg_i++; 
+						return WIMEY_OK;
+                    			}
+                		}
+
+                		__wimey_process_command(current, NULL);
+                		return WIMEY_OK;
+			}
+			current = current->next;
+		}
+
+        	WARN("Unknown command or argument: %s", argv[arg_i]);
+	}
+
+err:
+	ERR("Error found during command parsing, invalid input");
+	return WIMEY_ERR;
+}
+
+/* Default library configuration and
+ * internal functions caller. */
 int wimey_init(void) {
 	wimey_dict.cmds_head = NULL;
 	return WIMEY_OK;
@@ -159,17 +246,17 @@ void wimey_free_all(void) {
 #ifndef MAIN_TEST
 
 void command_hello(const char *value) {
-	printf("Hello command executed with value: %s\n", value ? value : "(no value)");
+	printf("Hello: %s\n", value ? value : "(no value)");
 }
 
 void command_goodbye(const char *value) {
-	printf("Goodbye command executed with value: %s\n", value ? value : "(no value)");
+	printf("Goodbye: %s\n", value ? value : "(no value)");
 }
 
 int main(int argc, char **argv) {
-	ERR("This is an error %s", "Invalid input");
-	WARN("This is a warn %s", "don't ignore me");
-	INFO("This is an info message %s", "you can ignore me");
+	//ERR("This is an error %s", "Invalid input");
+	//WARN("This is a warn %s", "don't ignore me");
+	//INFO("This is an info message %s", "you can ignore me");
 
 	if (wimey_init() != WIMEY_OK) {
         	ERR("Failed to initialize Wimey");
@@ -178,9 +265,9 @@ int main(int argc, char **argv) {
 
 	struct wimey_command_t cmd1 = {
         	.key = "hello",
-        	.has_value = false,
-        	.is_value_required = false,
-        	.value_name = NULL,
+        	.has_value = true,
+        	.is_value_required = true,
+        	.value_name = "Name",
         	.callback = command_hello
     	};
 
@@ -188,7 +275,7 @@ int main(int argc, char **argv) {
         	.key = "goodbye",
         	.has_value = false,
         	.is_value_required = false,
-        	.value_name = NULL,
+        	.value_name = "Name",
         	.callback = command_goodbye
     	};
 
@@ -211,6 +298,9 @@ int main(int argc, char **argv) {
         	current = current->next;
     	}
 
+	if (argc > 1) {
+		__wimey_parse_commands_from_buff(argc, argv);
+	}	
 	wimey_free_all();
 
 	return 0;
