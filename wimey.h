@@ -35,31 +35,30 @@ extern "C" {
 #define LOG_ERR_AND_WARNS 1
 #define LOG_ALL 2
 
-struct wimey_config_t {
-	int log_level;
-	char name[32]; /* program name */
-	char *desctipion; /* program description */
-	char *version; /* version: x.x.x */	
-};
+	struct wimey_config_t {
+		int log_level;
+		char name[32];	/* program name */
+		char *desctipion;	/* program description */
+		char *version;	/* version: x.x.x */
+	};
 
-struct wimey_command_t {
-	char *key; /* Command key */
-	int has_value; /* Boolean example: run <value?> */
-	int is_value_required;
-	char *value_name; /* or NULL */
-	void (*callback)(const char *value);
-};
+	struct wimey_command_t {
+		char *key;	/* Command key */
+		int has_value;	/* Boolean example: run <value?> */
+		int is_value_required;
+		char *value_name;	/* or NULL */
+		void (*callback)(const char *value);
+	};
 
 /* ------ Public API ------ */
-int wimey_init(void);
-int wimey_set_config(struct wimey_config_t *conf);
-struct wimey_config_t wimey_get_config(void);
-int wimey_add_command(struct wimey_command_t cmd);
-struct __wimey_command_node *wimey_get_commands_head(void);
-void wimey_free_all(void);
+	int wimey_init(void);
+	int wimey_set_config(struct wimey_config_t *conf);
+	struct wimey_config_t wimey_get_config(void);
+	int wimey_add_command(struct wimey_command_t cmd);
+	struct __wimey_command_node *wimey_get_commands_head(void);
+	void wimey_free_all(void);
 
 #ifdef _cplusplus
 }
 #endif
-
-#endif /* __WIMEY_H */
+#endif				/* __WIMEY_H */
