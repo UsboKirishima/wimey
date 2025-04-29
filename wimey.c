@@ -41,8 +41,10 @@ typedef int bool;
 
 static struct {
 	struct __wimey_command_node *cmds_head;
+	struct __wimey_argument_node *args_head;
 } wimey_dict = {
-	.cmds_head = NULL
+	.cmds_head = NULL,
+	.args_head = NULL
 };
 
 struct wimey_config_t wimey_conf = {
@@ -110,6 +112,7 @@ struct __wimey_command_node
 	new_node->next = NULL;
 	return new_node;
 }
+
 
 /* This function pulls back a new command 
  * to the commands dynamic list */
@@ -230,6 +233,51 @@ err:
 	ERR("Error found during command parsing, invalid input");
 	return WIMEY_ERR;
 }
+
+/* --------------- Arguments functions ------------- */
+
+struct __wimey_argument_node
+*wimey_create_argument_node(struct wimey_argument_t new_arg)
+{
+	struct __wimey_argument_node *new_node =
+	    (struct __wimey_argument_node
+	     *)(malloc(sizeof(struct __wimey_argument_node)));
+
+	if (!new_node) {
+		ERR("Memory allocation failed during command node creation");
+		return NULL;
+	}
+
+	new_node->argument = new_arg;
+	new_node->next = NULL;
+	return new_node;
+}
+
+int wimey_add_argument(struct wimey_argument_t argument) {
+	struct __wimey_argument_node *new_arg = wimey_create_argument_node(argument);
+
+	if (!new_arg) {
+		ERR("Failed to push back new argument, invalid argument.");
+		return WIMEY_ERR;
+	}
+
+	if (wimey_dict.args_head == NULL) {
+		wimey_dict.args_head = new_arg;
+		return WIMEY_OK;
+	}
+
+	struct __wimey_argument_node *current = wimey_dict.args_head;
+
+	while (current->next != NULL) {
+		current = current->next;
+	}
+
+	current->next = new_arg;
+	return WIMEY_OK;
+}
+
+int __wimey_parse_arguments(int argc, char **argv);
+
 
 /* --------------- Utiliy functions ---------------- */
 

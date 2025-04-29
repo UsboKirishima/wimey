@@ -40,7 +40,7 @@ extern "C" {
 #define RESET "\033[0m"
 #define RED "\033[1;31m"
 #define YELLOW "\033[1;33m"
-#define GREEN "\033[1;31m"
+#define GREEN "\033[1;32m"
 
 #define ERR(msg, ...) \
 	do { \
@@ -69,12 +69,29 @@ struct wimey_command_t {
 	int has_value;	/* Boolean example: run <value?> */
 	int is_value_required;
 	char *value_name;	/* or NULL */
+	char *desc;
 	void (*callback)(const char *value);
+};
+
+struct wimey_argument_t {
+	char *long_key; /* Example: --help */
+	char *short_key; /* Example: -h */
+	int has_value; /* Exampel: --port <value>  */
+	int is_value_required; /* Example: --delay <delay> | --delay (default: 0) */
+	char *value_name;
+	char *desc;
+	/* here no callback because arguments just 
+	 * assign a value to a variable */
 };
 
 struct __wimey_command_node {
 	struct wimey_command_t cmd;
 	struct __wimey_command_node *next;
+};
+
+struct __wimey_argument_node {
+	struct wimey_argument_t argument;
+	struct __wimey_argument_node *next;
 };
 
 /* ------ Public API ------ */
