@@ -39,16 +39,6 @@ typedef int bool;
 #define true 1
 #define false 0
 
-#define RESET "\033[0m"
-#define RED "\033[1;31m"
-#define YELLOW "\033[1;33m"
-#define GREEN "\033[1;31m"
-
-struct __wimey_command_node {
-	struct wimey_command_t cmd;
-	struct __wimey_command_node *next;
-};
-
 static struct {
 	struct __wimey_command_node *cmds_head;
 } wimey_dict = {
@@ -58,6 +48,10 @@ static struct {
 struct wimey_config_t wimey_conf = {
 	.log_level = LOG_ALL
 };
+
+#undef ERR
+#undef WARN
+#undef INFO
 
 #define ERR(msg, ...) \
 	do { \
@@ -242,7 +236,7 @@ err:
 /* This is a generic char* to long converter that 
  * can be used for different subtypes 
  * such us uint16_t int32_t etc..  */
-int wimey_val_to_long(const char *val) {
+long wimey_val_to_long(const char *val) {
 	long res;
 	char *p_end;
 
@@ -347,6 +341,11 @@ int wimey_init(void)
 	return WIMEY_OK;
 }
 
+/* Wrapper to internal helper  */
+int wimey_parse(int argc, char **argv) {
+	return __wimey_parse_commands_from_buff(argc, argv);
+}
+
 /* This function free all the lists  */
 void wimey_free_all(void)
 {
@@ -363,72 +362,4 @@ void wimey_free_all(void)
 	wimey_dict.cmds_head = NULL;
 }
 
-#ifndef MAIN_TEST
 
-void command_hello(const char *value)
-{
-	printf("Hello: %s\n", value ? value : "(no value)");
-	char op = wimey_val_to_char(value);
-	printf("Result * 2 = %d", op * 2);
-}
-
-void command_goodbye(const char *value)
-{
-	printf("Goodbye: %s\n", value ? value : "(no value)");
-}
-
-int main(int argc, char **argv)
-{
-	//ERR("This is an error %s", "Invalid input");
-	//WARN("This is a warn %s", "don't ignore me");
-	//INFO("This is an info message %s", "you can ignore me");
-
-	if (wimey_init() != WIMEY_OK) {
-		ERR("Failed to initialize Wimey");
-		return 1;
-	}
-
-	struct wimey_command_t cmd1 = {
-		.key = "hello",
-		.has_value = true,
-		.is_value_required = true,
-		.value_name = "Name",
-		.callback = command_hello
-	};
-
-	struct wimey_command_t cmd2 = {
-		.key = "goodbye",
-		.has_value = false,
-		.is_value_required = false,
-		.value_name = "Name",
-		.callback = command_goodbye
-	};
-
-	if (wimey_add_command(cmd1) != WIMEY_OK) {
-		ERR("Failed to add command: %s", cmd1.key);
-	} else {
-		INFO("Command added: %s", cmd1.key);
-	}
-
-	if (wimey_add_command(cmd2) != WIMEY_OK) {
-		ERR("Failed to add command: %s", cmd2.key);
-	} else {
-		INFO("Command added: %s", cmd2.key);
-	}
-
-	struct __wimey_command_node *current = wimey_get_commands_head();
-
-	while (current != NULL) {
-		printf("- %s\n", current->cmd.key);
-		current = current->next;
-	}
-
-	if (argc > 1) {
-		__wimey_parse_commands_from_buff(argc, argv);
-	}
-	wimey_free_all();
-
-	return 0;
-}
-
-#endif

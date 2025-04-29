@@ -23,6 +23,8 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
+
 #define WIMEY_OK 1
 #define WIMEY_ERR 0
 
@@ -35,30 +37,76 @@ extern "C" {
 #define LOG_ERR_AND_WARNS 1
 #define LOG_ALL 2
 
-	struct wimey_config_t {
-		int log_level;
-		char name[32];	/* program name */
-		char *desctipion;	/* program description */
-		char *version;	/* version: x.x.x */
-	};
+#define RESET "\033[0m"
+#define RED "\033[1;31m"
+#define YELLOW "\033[1;33m"
+#define GREEN "\033[1;31m"
 
-	struct wimey_command_t {
-		char *key;	/* Command key */
-		int has_value;	/* Boolean example: run <value?> */
-		int is_value_required;
-		char *value_name;	/* or NULL */
-		void (*callback)(const char *value);
-	};
+#define ERR(msg, ...) \
+	do { \
+		fprintf(stderr, RED "ERROR " RESET msg "\n", ##__VA_ARGS__); \
+	} while(0)
+
+#define WARN(msg, ...) \
+	do { \
+		printf(YELLOW "WARN  " RESET msg "\n", ##__VA_ARGS__); \
+	} while(0)
+
+#define INFO(msg, ...) \
+	do { \
+		printf(GREEN "INFO  " RESET msg "\n", ##__VA_ARGS__); \
+	} while(0)
+
+struct wimey_config_t {
+	int log_level;
+	char name[32];	/* program name */
+	char *description;	/* program description */
+	char *version;	/* version: x.x.x */
+};
+
+struct wimey_command_t {
+	char *key;	/* Command key */
+	int has_value;	/* Boolean example: run <value?> */
+	int is_value_required;
+	char *value_name;	/* or NULL */
+	void (*callback)(const char *value);
+};
+
+struct __wimey_command_node {
+	struct wimey_command_t cmd;
+	struct __wimey_command_node *next;
+};
 
 /* ------ Public API ------ */
-	int wimey_init(void);
-	int wimey_set_config(struct wimey_config_t *conf);
-	struct wimey_config_t wimey_get_config(void);
-	int wimey_add_command(struct wimey_command_t cmd);
-	struct __wimey_command_node *wimey_get_commands_head(void);
-	void wimey_free_all(void);
+
+/* Configuration & Init */
+int wimey_init(void);
+int wimey_set_config(struct wimey_config_t *conf);
+struct wimey_config_t wimey_get_config(void);
+void wimey_free_all(void);
+
+/* This function is an universal wrapper 
+ * both for commands and arguments  */
+int wimey_parse(int argc, char **argv);
+
+/* Commands */
+int wimey_add_command(struct wimey_command_t cmd);
+
+/* In some case if we need to iterate on the commands list
+ * this functions return his head, so It's an internal 
+ * function but public. */
+struct __wimey_command_node *wimey_get_commands_head(void);
+
+/* Utility function */
+long wimey_val_to_long(const char *val);
+int wimey_val_to_int(const char *val);
+float wimey_val_to_float(const char *val);
+double wimey_val_to_double(const char *val);
+uint64_t wimey_val_to_u64(const char *val);
+char wimey_val_to_char(const char *val);
 
 #ifdef _cplusplus
 }
 #endif
-#endif				/* __WIMEY_H */
+#endif /* __WIMEY_H */
+#pragma once
