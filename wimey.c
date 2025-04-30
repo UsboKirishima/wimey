@@ -113,11 +113,6 @@ struct __wimey_command_node
 	/* heap struct initiaization */
 	memset(new_node, 0, sizeof(*new_node));
 
-	if (!new_node) {
-		ERR("Memory allocation failed during command node creation");
-		return NULL;
-	}
-
 	new_node->cmd = new_cmd;
 	new_node->next = NULL;
 	return new_node;
@@ -175,6 +170,29 @@ struct __wimey_command_node *wimey_get_commands_head(void)
 	return wimey_dict.cmds_head;
 }
 
+static struct __wimey_command_node 
+*__wimey_get_command_node(char *str) {
+	struct __wimey_command_node *current = wimey_get_commands_head();
+
+	if(current == NULL)
+		return NULL;
+
+	while(current != NULL) {
+		bool is_valid_key = strcmp(str, current->cmd.key);
+
+		if(is_valid_key == 0)
+			return current;
+
+		current = current->next;
+	}
+
+	return NULL;
+}
+
+bool __wimey_check_command(char *str) {
+	return __wimey_get_command_node(str) != NULL;
+}
+
 /* Process a specific command with its value if needed */
 bool __wimey_process_command(struct __wimey_command_node *cmd_node, char *value)
 {
@@ -191,55 +209,63 @@ bool __wimey_process_command(struct __wimey_command_node *cmd_node, char *value)
  * command line buffer and search commands.
  * Then executes callbacks and returns
  */
-int __wimey_parse_commands_from_buff(int argc, char **argv)
+int __wimey_parse_commands(int argc, char **argv)
 {
+	if(wimey_get_commands_head() == NULL)
+		return WIMEY_OK;
+	
 	if (argc < 2) {
 		ERR("Argc < 2, but there are commands in the dictionary");
 		goto err;
 	}
 
 	for (int arg_i = 1; arg_i < argc; arg_i++) {
-		struct __wimey_command_node *current =
-		    wimey_get_commands_head();
+		char *current_cmd = argv[arg_i];
+		bool is_cmd_in_dict = __wimey_check_command(current_cmd);
+		
 
-		if (current == NULL) {
-			ERR("No commands registered in dictionary");
+		if(!is_cmd_in_dict) 
+			continue;
+
+		struct __wimey_command_node *node = __wimey_get_command_node(current_cmd);
+		
+		if(!node) {
+			ERR("Failed to get node pointer");
 			goto err;
 		}
 
-		while (current != NULL) {
-			if (strcmp(current->cmd.key, argv[arg_i]) == 0) {
-				INFO("Found command: %s", current->cmd.key);
-
-				if (current->cmd.is_value_required
-				    && arg_i + 1 >= argc) {
-					ERR("Command %s requires value `%s` but none provided", 
-							current->cmd.key, current->cmd.value_name);
-					goto err;
-				}
-
-				if (current->cmd.has_value && arg_i + 1 < argc) {
-					if (!__wimey_is_str_a_command
-					    (argv[arg_i + 1])) {
-						__wimey_process_command(current,
-									argv
-									[arg_i +
-									 1]);
-						arg_i++;
-						return WIMEY_OK;
-					}
-				}
-
-				__wimey_process_command(current, NULL);
-				return WIMEY_OK;
-			}
-			current = current->next;
+		if(node->cmd.is_value_required 
+				&& arg_i + 1 >= argc) {
+			ERR("Command %s requires value `%s` but none provided", 
+					node->cmd.key, node->cmd.value_name);
+			goto err;
 		}
 
-		WARN("Unknown command or argument: %s", argv[arg_i]);
-	}
+		if(node->cmd.has_value && arg_i + 1 < argc) {
+			INFO("Found command: %s", node->cmd.key);
 
-err:
+			if (node->cmd.is_value_required
+					&& arg_i + 1 >= argc) {
+				ERR("Command %s requires value `%s` but none provided", 
+						node->cmd.key, node->cmd.value_name);
+					goto err;
+			}
+
+			if (node->cmd.has_value && arg_i + 1 < argc) {
+				if (!__wimey_is_str_a_command
+						(argv[arg_i + 1])) {
+
+					__wimey_process_command(node, argv[arg_i + 1]);
+					arg_i++;
+					return WIMEY_OK;
+				}
+			}
+
+			__wimey_process_command(node, NULL);
+			return WIMEY_OK;
+		}
+	}
+err:		
 	ERR("Error found during command parsing, invalid input");
 	return WIMEY_ERR;
 }
@@ -254,9 +280,11 @@ struct __wimey_argument_node
 	     *)(malloc(sizeof(struct __wimey_argument_node)));
 
 	if (!new_node) {
-		ERR("Memory allocation failed during command node creation");
+		ERR("Allocation failed of argument");
 		return NULL;
 	}
+
+	memset(new_node, 0, sizeof(*new_node));
 
 	new_node->argument = new_arg;
 	new_node->next = NULL;
@@ -341,6 +369,9 @@ static bool __wimey_check_argument(char *str) {
 }
 
 int __wimey_parse_arguments(int argc, char **argv) {
+	if(wimey_get_arguments_head() == NULL)
+		return WIMEY_OK;
+	
 	for(int arg_i = 0; arg_i < argc; arg_i++) {
 		char *current_arg = argv[arg_i];
 		bool is_arg_in_dict = __wimey_check_argument(current_arg);
@@ -480,7 +511,10 @@ int wimey_init(void)
 
 /* Wrapper to internal helper  */
 int wimey_parse(int argc, char **argv) {
-	return __wimey_parse_commands_from_buff(argc, argv);
+	int cmds_parse = __wimey_parse_commands(argc, argv);
+	int args_parse = __wimey_parse_arguments(argc, argv);
+
+	return cmds_parse && args_parse;
 }
 
 /* This function free all the lists  */

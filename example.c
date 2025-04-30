@@ -25,6 +25,8 @@
 #define true 1
 #define false 0
 
+#define SQUARE(x) (x * x)
+
 /* --------- Command Declarations --------- */
 
 void command_hello(const char *value);
@@ -58,8 +60,8 @@ void command_hello(const char *value)
 void command_square(const char *value) /* square of number */
 {
 	if(!value) return;
-	double res = wimey_val_to_double(value) * 2;
-	INFO("%s * 2 = %.2f", value, res);
+	double res = SQUARE(wimey_val_to_double(value));
+	INFO("%s ^ 2 = %.2f", value, res);
 }
 
 int main(int argc, char **argv)
