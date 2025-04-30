@@ -276,9 +276,87 @@ int wimey_add_argument(struct wimey_argument_t argument) {
 	return WIMEY_OK;
 }
 
-int __wimey_parse_arguments(int argc, char **argv);
+struct __wimey_argument_node *wimey_get_arguments_head(void)
+{
+	return wimey_dict.args_head;
+}
 
+/* This function gets a string and returns if the string is
+ * contained into the arguments list */
+/*bool __wimey_check_argument(char *str) {
+	struct __wimey_argument_node *current = wimey_get_arguments_head();
 
+	if(current == NULL)
+		return false;
+	
+	while(current != NULL) {
+		bool is_valid_lkey = strcmp(str, current->argument.long_key);
+		bool is_valid_skey = strcmp(str, current->argument.short_key);
+
+		if(is_valid_lkey == 0 || is_valid_skey == 0) {
+			INFO("Argument found: %s", str);
+			return true;
+		}
+		
+		current = current->next;
+	}
+	return true;
+}*/
+
+static struct __wimey_argument_node 
+*__wimey_get_argument_node(char *str) {
+	struct __wimey_argument_node *current = wimey_get_arguments_head();
+
+	if(current == NULL)
+		return NULL;
+
+	while(current != NULL) {
+		bool is_valid_lkey = strcmp(str, current->argument.long_key);
+		bool is_valid_skey = strcmp(str, current->argument.short_key);
+
+		if(is_valid_lkey == 0 || is_valid_skey == 0)
+			return current;
+
+		current = current->next;
+	}
+
+	return NULL;
+}
+
+/* Inline function to return true if the str is 
+ * a recognized argument else returns false if 
+ * the str is out of args list*/
+static bool __wimey_check_argument(char *str) {
+	return __wimey_get_argument_node(str) != NULL;
+}
+
+int __wimey_parse_arguments(int argc, char **argv) {
+	for(int arg_i = 0; arg_i < argc; arg_i++) {
+		char *current_arg = argv[arg_i];
+		bool is_arg_in_dict = __wimey_check_argument(current_arg);
+
+		if(!is_arg_in_dict)
+			continue;
+
+		struct __wimey_argument_node *node = __wimey_get_argument_node(current_arg);
+
+		if(node->argument.is_value_required
+				&& arg_i + 1 >= argc) {
+			ERR("Argument %s requires value `%s` but none provided", 
+					node->argument.long_key, node->argument.value_name);
+			goto err;
+		}
+
+		if(node->argument.has_value && arg_i + 1 < argc) {
+			//todo
+			return WIMEY_OK;
+		}
+	}
+
+err:
+	ERR("Error found during argument parsing, invalid input");
+	return WIMEY_ERR;
+}
 /* --------------- Utiliy functions ---------------- */
 
 /* This is a generic char* to long converter that 
@@ -386,6 +464,7 @@ char wimey_val_to_char(const char *val) {
 int wimey_init(void)
 {
 	wimey_dict.cmds_head = NULL;
+	wimey_dict.args_head = NULL;
 	return WIMEY_OK;
 }
 
