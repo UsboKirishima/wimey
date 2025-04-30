@@ -20,6 +20,8 @@
 /**
  * TODO: (DONE) Commands recognition 
  * TODO: (DONE) Value parsers es. wimey_val_to_int()
+ * TODO: Adding arguments functions
+ * TODO: Change variable with arguments so get var as pointer in func adder
  * TODO: Prefix config
  * TODO: "[key]=<value>" or "[key] <value>" config
  * TODO: Arguments management
@@ -102,6 +104,14 @@ struct __wimey_command_node
 	struct __wimey_command_node *new_node =
 	    (struct __wimey_command_node
 	     *)(malloc(sizeof(struct __wimey_command_node)));
+	
+	if(!new_node) {
+		ERR("Failed to allocate command.");
+		return NULL;
+	}
+
+	/* heap struct initiaization */
+	memset(new_node, 0, sizeof(*new_node));
 
 	if (!new_node) {
 		ERR("Memory allocation failed during command node creation");
@@ -476,17 +486,31 @@ int wimey_parse(int argc, char **argv) {
 /* This function free all the lists  */
 void wimey_free_all(void)
 {
-	struct __wimey_command_node *current = wimey_dict.cmds_head;
-	struct __wimey_command_node *tmp;
+	struct __wimey_command_node *current_cmd = wimey_dict.cmds_head;
+	struct __wimey_argument_node *current_arg = wimey_dict.args_head;
+	
+	struct __wimey_command_node *tmp_cmd;
+	struct __wimey_argument_node *tmp_arg;
+	
+	/* Deallocates commands list */
+	while (current_cmd != NULL) {
+		tmp_cmd = current_cmd->next;
 
-	while (current != NULL) {
-		tmp = current->next;
+		free(current_cmd);
+		current_cmd = tmp_cmd;
+	}
+	
+	wimey_dict.cmds_head = NULL;
+	
+	/* Deallocates arguments list */
+	while(current_arg != NULL) {
+		tmp_arg = current_arg->next;
 
-		free(current);
-		current = tmp;
+		free(current_arg);
+		current_arg = tmp_arg;
 	}
 
-	wimey_dict.cmds_head = NULL;
+	wimey_dict.args_head = NULL;
 }
 
 
