@@ -73,12 +73,21 @@ struct wimey_command_t {
 	void (*callback)(const char *value);
 };
 
+enum wimey_argument_type {
+	WIMEY_LONG = 1 << 0,
+	WIMEY_DOUBLE = 1 << 2,
+	WIMEY_STR = 1 << 3,
+	WIMEY_BOOL = 1 << 4
+};
+
 struct wimey_argument_t {
 	char *long_key; /* Example: --help */
 	char *short_key; /* Example: -h */
 	int has_value; /* Exampel: --port <value>  */
 	int is_value_required; /* Example: --delay <delay> | --delay (default: 0) */
+	void *value_dest; /* destination variable pointer */
 	char *value_name;
+	enum wimey_argument_type value_type; /* long, dobule, str, bool  */
 	char *desc;
 	/* here no callback because arguments just 
 	 * assign a value to a variable */
@@ -113,6 +122,10 @@ int wimey_add_command(struct wimey_command_t cmd);
  * this functions return his head, so It's an internal 
  * function but public. */
 struct __wimey_command_node *wimey_get_commands_head(void);
+
+/* Arguments */
+int wimey_add_argument(struct wimey_argument_t argument);
+struct __wimey_argument_node *wimey_get_arguments_head(void);
 
 /* Utility function */
 long wimey_val_to_long(const char *val);

@@ -257,14 +257,18 @@ int __wimey_parse_commands(int argc, char **argv)
 
 					__wimey_process_command(node, argv[arg_i + 1]);
 					arg_i++;
-					return WIMEY_OK;
+				//	return WIMEY_OK;
+					continue;
 				}
 			}
 
 			__wimey_process_command(node, NULL);
-			return WIMEY_OK;
+			//return WIMEY_OK;
+			continue;
 		}
 	}
+
+	return WIMEY_OK;
 err:		
 	ERR("Error found during command parsing, invalid input");
 	return WIMEY_ERR;
@@ -292,6 +296,29 @@ struct __wimey_argument_node
 }
 
 int wimey_add_argument(struct wimey_argument_t argument) {
+	
+	/* If the argument has no value or value isn't requried 
+	 * we set the type as bool. For example if we have a --help
+	 * argument we don't need values we can set it as bool.
+	 *
+	 * In future: we need to handle also arguments that can be
+	 * both bool or with a value example:
+	 * 	Here --help argument is a boolean
+	 * 	because help exists:
+	 * 		Command: user@pc ~ $ program --help
+	 * 		Output: Type --help <category>
+	 *	
+	 *	Here --help argument has a value of type str:
+	 * 		Command: user@pc ~ $ program --help banana
+	 * 		Output: Help for Banana
+	 * 			...
+	 * 	*/
+	if(!argument.is_value_required || !argument.has_value) {
+		argument.value_type = WIMEY_BOOL;
+		argument.is_value_required = true;
+		argument.has_value = true;
+	}
+	
 	struct __wimey_argument_node *new_arg = wimey_create_argument_node(argument);
 
 	if (!new_arg) {
@@ -318,28 +345,6 @@ struct __wimey_argument_node *wimey_get_arguments_head(void)
 {
 	return wimey_dict.args_head;
 }
-
-/* This function gets a string and returns if the string is
- * contained into the arguments list */
-/*bool __wimey_check_argument(char *str) {
-	struct __wimey_argument_node *current = wimey_get_arguments_head();
-
-	if(current == NULL)
-		return false;
-	
-	while(current != NULL) {
-		bool is_valid_lkey = strcmp(str, current->argument.long_key);
-		bool is_valid_skey = strcmp(str, current->argument.short_key);
-
-		if(is_valid_lkey == 0 || is_valid_skey == 0) {
-			INFO("Argument found: %s", str);
-			return true;
-		}
-		
-		current = current->next;
-	}
-	return true;
-}*/
 
 static struct __wimey_argument_node 
 *__wimey_get_argument_node(char *str) {
@@ -389,10 +394,32 @@ int __wimey_parse_arguments(int argc, char **argv) {
 		}
 
 		if(node->argument.has_value && arg_i + 1 < argc) {
-			//todo
-			return WIMEY_OK;
+			char *val = argv[arg_i + 1];
+
+			switch(node->argument.value_type) {
+			case WIMEY_LONG:
+				long res_l = wimey_val_to_long(val);
+				*(long *)node->argument.value_dest = res_l;
+				break;
+			case WIMEY_DOUBLE:
+				double res_d = wimey_val_to_double(val);
+				*(double *)node->argument.value_dest = res_d;
+				break;
+			case WIMEY_STR:
+				*(char **)node->argument.value_dest = strdup(val);
+				break;
+			case WIMEY_BOOL:
+				*(int *)node->argument.value_dest = true;
+				break;
+			default:
+				ERR("Failed to resolve argument type");
+				goto err;
+			}
+			continue;
 		}
 	}
+
+	return WIMEY_OK;
 
 err:
 	ERR("Error found during argument parsing, invalid input");
