@@ -78,20 +78,18 @@ struct wimey_argument_t arg2 = {
 
 /* --------- Callback Implementations --------- */
 
-void command_hello(const char *value)
-{
+void command_hello(const char *value) {
 	INFO("Hello: %s", value ? value : "(no value)");
 }
 
 void command_square(const char *value) /* square of number */
 {
-	if(!value) return;
+	if (!value) return;
 	double res = SQUARE(wimey_val_to_double(value));
 	INFO("%s ^ 2 = %.2f", value, res);
 }
 
-int main(int argc, char **argv)
-{	
+int main(int argc, char **argv) {	
 	/* 1. First, we need to call wimey_init(),
 	 *    which initializes default values in structs and
 	 *    does some other setup work.
@@ -143,11 +141,11 @@ int main(int argc, char **argv)
 		ERR("Failed to add command: %s", cmd2.key);
 	}
 
-	if(wimey_add_argument(arg1) != WIMEY_OK) {
+	if (wimey_add_argument(arg1) != WIMEY_OK) {
 		ERR("Failed to add argument: %s", arg1.long_key);
 	}
 
-	if(wimey_add_argument(arg2) != WIMEY_OK) {
+	if (wimey_add_argument(arg2) != WIMEY_OK) {
 		ERR("Failed to add argument: %s", arg2.long_key);
 	}
 	
@@ -181,7 +179,7 @@ int main(int argc, char **argv)
 	 */
 	wimey_parse(argc, argv);
 
-	if(version)
+	if (version)
 		INFO("Version 1.0.0");
 
 	INFO("The value of count is %d",(int)count);

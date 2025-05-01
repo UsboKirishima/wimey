@@ -45,17 +45,17 @@ extern "C" {
 #define ERR(msg, ...) \
 	do { \
 		fprintf(stderr, RED "ERROR " RESET msg "\n", ##__VA_ARGS__); \
-	} while(0)
+	} while (0)
 
 #define WARN(msg, ...) \
 	do { \
 		printf(YELLOW "WARN  " RESET msg "\n", ##__VA_ARGS__); \
-	} while(0)
+	} while (0)
 
 #define INFO(msg, ...) \
 	do { \
 		printf(GREEN "INFO  " RESET msg "\n", ##__VA_ARGS__); \
-	} while(0)
+	} while (0)
 
 struct wimey_config_t {
 	int log_level;
