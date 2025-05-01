@@ -212,7 +212,7 @@ int __wimey_parse_commands(int argc, char **argv) {
 	for (int arg_i = 0; arg_i < argc; arg_i++) {
 		char *current_cmd = argv[arg_i];
 		bool is_cmd_in_dict = __wimey_check_command(current_cmd);
-		bool overflow = arg_i + 1 > argc;
+		bool overflow = arg_i + 1 >= argc;
 
 		if (!is_cmd_in_dict)
 			continue;
@@ -234,12 +234,12 @@ int __wimey_parse_commands(int argc, char **argv) {
 		if (node->cmd.has_value && !overflow) {
 			INFO("Found command: %s", node->cmd.key);
 
-			if (node->cmd.is_value_required && arg_i + 1 >= argc) {
+			if (node->cmd.is_value_required && overflow) {
 				ERR("Command %s requires value `%s` but none provided", node->cmd.key, node->cmd.value_name);
 				goto err;
 			}
 
-			if (node->cmd.has_value && arg_i + 1 < argc) {
+			if (node->cmd.has_value && !overflow) {
 				if (!__wimey_is_str_a_command(argv[arg_i + 1])) {
 
 					__wimey_process_command(node,
