@@ -23,6 +23,7 @@
  * TODO: (DONE) Argument adding functions
  * TODO: (DONE) Change variable handling with arguments to get var as pointer in adder function
  * TODO: (DONE) Argument management
+ * TODO: Generate help
  * TODO: "[key]=<value>" or "[key] <value>" configuration format
  */
 #define _GNU_SOURCE
