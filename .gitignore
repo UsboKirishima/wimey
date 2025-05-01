@@ -51,4 +51,6 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-wimey_example*
+# Other stuff
+.vscode/
+wimey_example
