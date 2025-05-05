@@ -15,16 +15,49 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
-/**
+ *
+ * =================== Informations About Library ========================
+ * This is a simple library made to parse both commands and arguments,
+ * It can be used to make a command line tool.
+ *
+ * So we need to understand what a command is:
+ * 1. A command is a direction given from the user to perform something,
+ *    in general when a command is specified it calls a function that do
+ *    something. For example:
+ *    	Here we have a command line tool called "npm" used to manage
+ *    	node.js dependencies in a js project. If we look at the command: 
+ *    	"npm install electron" we can individuate some expressions: 
+ *    	"npm <cmd> <arg>", and the library simply interprets this as 
+ *	void install(char *argument);
+ *    So how can we manage all the commands? Simple, we add all the 
+ *    commands in a linked list, then we get the command line 
+ *    arguments "argc" and "argv" and parse it by iterating on our commands
+ *    list, when we find a command, we check if the command requires a value,
+ *    in case of positive result we get the value and we sent it to a callback
+ *    function that we run.
+ *
+ * 2. An argument is like a constant passed by user using command line,
+ *    in general arguments are used to specify settings, manage output,
+ *    passing informations such as files, addresses, ports etc...
+ *    For example: "ffmpeg --version" displays the version of ffmpeg,
+ *    in this case the argument "--version" does not require a value.
+ *    But if we look at "pacman -S vim" we can see that we have an argument
+ *    called "-S" in short version or "--sync" in long version that requires
+ *    the packages name as value. So we can treat it as a variable 
+ *    "char *sync = NULL;" and when the user passes "--sync" as parameter
+ *    the program dereferences the "sync" variable passed as pointer to a function
+ *    and modify it adding the user passed value.
+ *
+ * =================== Project Design & Todos  ========================
+ *
+ * TODO: Generate help
+ * TODO: "[key]=<value>" or "[key] <value>" configuration format
+ *
  * TODO: (DONE) Command recognition 
  * TODO: (DONE) Value parsers e.g. wimey_val_to_int()
  * TODO: (DONE) Argument adding functions
  * TODO: (DONE) Change variable handling with arguments to get var as pointer in adder function
  * TODO: (DONE) Argument management
- * TODO: Generate help
- * TODO: "[key]=<value>" or "[key] <value>" configuration format
  */
 #define _GNU_SOURCE
 #include <stdio.h>
@@ -42,6 +75,12 @@ typedef int bool;
 #define true 1
 #define false 0
 
+/* Errors are handled in all functions by two defines
+ * WIMEY_OK = 1 (When a function returns successully) 
+ * WIMEY_ERR = 0 (When a fucntion returns failure) 
+ * ...see header file
+ */
+
 static struct {
 	struct __wimey_command_node *cmds_head;
 	struct __wimey_argument_node *args_head;
@@ -57,6 +96,11 @@ struct wimey_config_t wimey_conf = {
 #undef ERR
 #undef WARN
 #undef INFO
+
+/* These debug macros are different from the
+ * macros declared in wimey.h because here we need
+ * to follow the debug level set with the lib 
+ * configuration struct  */
 
 #define ERR(msg, ...) \
     do { \
@@ -163,6 +207,7 @@ struct __wimey_command_node *wimey_get_commands_head(void) {
 	return wimey_dict.cmds_head;
 }
 
+/* Given a string returns the command node */
 static struct __wimey_command_node
 *__wimey_get_command_node(char *str) {
 	struct __wimey_command_node *current = wimey_get_commands_head();
@@ -182,6 +227,7 @@ static struct __wimey_command_node
 	return NULL;
 }
 
+/* Given a string returns if it's a valid command  */
 bool __wimey_check_command(char *str) {
 	return __wimey_get_command_node(str) != NULL;
 }
@@ -265,6 +311,9 @@ err:
 
 /* --------------- Argument functions ------------- */
 
+/* This function get as parameter wimey_argument_t
+ * and put it into a new allocated node, essentialy
+ * a "next" pointer and our value (wimey_argument_t) */
 struct __wimey_argument_node
 *wimey_create_argument_node(struct wimey_argument_t new_arg) {
 	struct __wimey_argument_node *new_node =
@@ -283,6 +332,7 @@ struct __wimey_argument_node
 	return new_node;
 }
 
+/* Add argument to arguments dynamic list */
 int wimey_add_argument(struct wimey_argument_t argument) {
 
 	/* If argument has no value or value isn't required
@@ -329,10 +379,14 @@ int wimey_add_argument(struct wimey_argument_t argument) {
 	return WIMEY_OK;
 }
 
+/* Internal function to get the arguments head node 
+ * but also avaible as public out of the library to iterate
+ * the list of args  */
 struct __wimey_argument_node *wimey_get_arguments_head(void) {
 	return wimey_dict.args_head;
 }
 
+/* Get the node of a specific argument given by string */
 static struct __wimey_argument_node
 *__wimey_get_argument_node(char *str) {
 	struct __wimey_argument_node *current = wimey_get_arguments_head();
@@ -359,6 +413,9 @@ static bool __wimey_check_argument(char *str) {
 	return __wimey_get_argument_node(str) != NULL;
 }
 
+/* Internal function to parse all the arguments,
+ * this function also do checks and deref of
+ * pointers shared in the arguments  */
 int __wimey_parse_arguments(int argc, char **argv) {
 	if (wimey_get_arguments_head() == NULL)
 		return WIMEY_OK;
@@ -382,10 +439,11 @@ int __wimey_parse_arguments(int argc, char **argv) {
 			    node->argument.long_key, node->argument.value_name);
 			goto err;
 		}
-
+		
 		if (node->argument.has_value && !overflow) {
 			char *val = argv[arg_i + 1];
-
+			
+			/* Here we check the type of the argument */
 			switch (node->argument.value_type) {
 			case WIMEY_LONG:
 				long res_l = wimey_val_to_long(val);
