@@ -50,9 +50,9 @@
  *
  * =================== Project Design & Todos  ========================
  *
- * TODO: Generate help
  * TODO: "[key]=<value>" or "[key] <value>" configuration format
  *
+ * TODO: (DONE) Generate help
  * TODO: (DONE) Command recognition 
  * TODO: (DONE) Value parsers e.g. wimey_val_to_int()
  * TODO: (DONE) Argument adding functions

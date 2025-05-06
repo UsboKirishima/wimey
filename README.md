@@ -12,7 +12,7 @@ With Wimey you can:
 
 * Add new commands
 * Add arguments
-* Generate help command (soon)
+* Generate help command
 * Keep a linked list of you cmds/args
 * Keep your project clean & readable
 
