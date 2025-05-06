@@ -61,7 +61,10 @@ struct wimey_config_t {
 	int log_level;
 	char name[32];	/* program name */
 	char *description;	/* program description */
+	char *usage; /* Example: tung [options] url */
 	char *version;	/* version: x.x.x */
+	char *copyright; /* Example: Copyright (C) 2025 Davide Usberti  */
+	char *license; /* Example: Apache v2.0  */
 };
 
 struct wimey_command_t {
@@ -128,6 +131,7 @@ int wimey_add_argument(struct wimey_argument_t argument);
 struct __wimey_argument_node *wimey_get_arguments_head(void);
 
 /* Utility function */
+int wimey_generate_help();
 long wimey_val_to_long(const char *val);
 int wimey_val_to_int(const char *val);
 float wimey_val_to_float(const char *val);

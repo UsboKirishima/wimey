@@ -93,6 +93,17 @@ struct wimey_config_t wimey_conf = {
 	.log_level = LOG_ALL
 };
 
+struct wimey_argument_t help_arg = {
+		.long_key = "--help",
+		.short_key = "-h",
+		.has_value = false,
+		.is_value_required = false,
+		.value_dest = NULL,
+		.value_name = NULL,
+		.value_type = WIMEY_BOOL,
+		.desc = "Show help list"
+};
+
 #undef ERR
 #undef WARN
 #undef INFO
@@ -118,6 +129,10 @@ struct wimey_config_t wimey_conf = {
 	if (wimey_conf.log_level >= LOG_ALL) \
 	    printf(GREEN "INFO  " RESET msg "\n", ##__VA_ARGS__); \
     } while (0)
+
+
+/* prototypes */
+void __wimey_print_help(int argc, char **argv);
 
 /* ------- Configuration functions ------- */
 
@@ -441,6 +456,13 @@ int __wimey_parse_arguments(int argc, char **argv) {
 		}
 		
 		if (node->argument.has_value && !overflow) {
+
+			if(strcmp(node->argument.long_key, help_arg.long_key) == 0) {
+				__wimey_print_help(argc, argv);
+				exit(EXIT_SUCCESS);
+
+				return WIMEY_OK; /* Program will never reach this code  */
+			}
 			char *val = argv[arg_i + 1];
 			
 			/* Here we check the type of the argument */
@@ -476,6 +498,80 @@ err:
 }
 
 /* --------------- Utility functions ---------------- */
+
+/* This function simply create a privilaged node
+ * that contains the help argument  */
+int wimey_generate_help() {
+	if(wimey_add_argument(help_arg) != WIMEY_OK) {
+		ERR("Error during `--help` generation");
+		return WIMEY_ERR;
+	}
+	
+	return WIMEY_OK;
+}
+
+/* Internal helper to print the help
+ * list and the program informations  */
+void __wimey_print_help(int argc, char **argv) {
+	(void)argc;
+
+	struct __wimey_argument_node *arg = wimey_get_arguments_head();
+	struct __wimey_command_node *cmd = wimey_get_commands_head();
+	
+	if(wimey_conf.name[0] != '\0' && wimey_conf.version != NULL)
+		printf("%s (v%s)", wimey_conf.name, wimey_conf.version);
+	
+	if(wimey_conf.usage == NULL) {
+		printf("\n%s [options] [arguments]", argv[0]);
+	} else {
+		printf("\nUsage: %s\n", wimey_conf.usage);
+	}
+	
+	if(wimey_conf.description != NULL)
+		printf("\n%s\n", wimey_conf.description);
+	
+	/* We need to take the max command key len */
+	int max_cmd_len = 0;
+    	while (cmd != NULL) {
+        	int len = strlen(cmd->cmd.key);
+        	if (len > max_cmd_len) max_cmd_len = len;
+		cmd = cmd->next;
+    	}
+
+	int max_arg_len = 0;
+	while(arg != NULL) {
+		int alen = strlen(arg->argument.long_key) /* Adding len for --help  */
+			+ strlen(arg->argument.short_key)  /* Adding len for -h */
+			+ 2; /* Adding len for the 2 spaces between --help and -h */
+		if(alen > max_arg_len) max_arg_len = alen;
+		arg = arg->next;
+	}
+	
+	int max_len = max_cmd_len > max_arg_len ? max_cmd_len : max_arg_len;
+
+	cmd = wimey_get_commands_head();
+	arg = wimey_get_arguments_head();
+
+	printf("\n%s\n", "Commands:");
+	while(cmd != NULL) {
+		printf("  %-*s  %s\n", max_len, cmd->cmd.key, cmd->cmd.desc);
+		cmd = cmd->next;
+	}
+
+	printf("\n%s\n", "Arguments: ");
+	while(arg != NULL) {
+		char buffer[256];
+		snprintf(buffer, sizeof(buffer), "%s  %s", arg->argument.short_key, arg->argument.long_key);	
+		printf("  %-*s  %s\n", max_len, buffer, arg->argument.desc);
+		arg = arg->next;
+	}
+	
+	if(wimey_conf.copyright != NULL)
+		printf("\n%s\n", wimey_conf.copyright);
+
+	if(wimey_conf.license != NULL)
+		printf("This software is under %s license.", wimey_conf.license);
+}
 
 /* Generic string to long converter that can be used
  * for different integer subtypes (uint16_t, int32_t etc) */

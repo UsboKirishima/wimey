@@ -39,7 +39,8 @@ struct wimey_command_t cmd1 = {
 	.has_value = true,
 	.is_value_required = true,
 	.value_name = "Name",
-	.callback = command_hello
+	.callback = command_hello,
+	.desc = "Say hello to someone"
 };
 
 struct wimey_command_t cmd2 = {
@@ -47,7 +48,8 @@ struct wimey_command_t cmd2 = {
 	.has_value = true,
 	.is_value_required = true,
 	.value_name = "Number (double)",
-	.callback = command_square
+	.callback = command_square,
+	.desc = "Get the square of a double"
 };
 
 /* ------------- Argument Definitions -------------- */
@@ -114,7 +116,10 @@ int main(int argc, char **argv) {
 		.log_level = LOG_ALL, 
 		.name = "Example CLI",
 		.description = "Simple example using the Wimey library",
-		.version = "1.0.0"	
+		.version = "1.0.0",
+		.usage = "./wimey_example [command] <value> [argument] <value>",
+		.copyright = "Copyright (C) 2025 Davide Usberti",
+		.license = "GNU General Public License v3.0"	
 	};
 
 	wimey_set_config(&myconf);
@@ -148,6 +153,8 @@ int main(int argc, char **argv) {
 	if (wimey_add_argument(arg2) != WIMEY_OK) {
 		ERR("Failed to add argument: %s", arg2.long_key);
 	}
+
+	wimey_generate_help(); /* We can library-generated help argument */
 	
 	/* 4. You can explore and iterate over the internal command list.
 	 *    For example, you can loop through and print all the
