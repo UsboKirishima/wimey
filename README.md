@@ -1,22 +1,56 @@
-# wimey
+# WIMEY
 
-Wimey - C library to handle command line tool easily
+**Wimey** is a simple-to-use C library to parse commands and arguments, written in **less <600 Lines of Code**. It supports both command and argument parsing, including value handling, automatic help generation, and type-safe conversions. Designed for flexibility and minimal dependencies, Wimey helps you structure your CLI programs cleanly and efficiently.
 
-## What's Wimey?
+## Features
 
-**Wimey** is a simple-to-use C library to parse commands and arguments, written in **less <600 Lines of Code**.
-
-## What can you do
-
-With Wimey you can:
-
-* Add new commands
-* Add arguments
-* Generate help command
-* Keep a linked list of you cmds/args
-* Keep your project clean & readable
+- 🧭 Command and subcommand support
+- 🧾 Positional and optional arguments
+- 🧠 Type-safe argument parsing (int, bool, string, float)
+- 📖 Built-in help message generation
+- 🧱 No external dependencies
+- 🛠️ Simple, clean API for building CLI tools
 
 ## How to use
+
+```c
+#include <stdio.h>
+#include "wimey.h"
+
+int main(int argc, char **argv) {
+    // Init Wimey
+    if (wimey_init() != WIMEY_OK) {
+        ERR("Init failed");
+        return 1;
+    }
+    // Config
+    struct wimey_config_t cfg = {
+        .name = "Example",
+        .description = "Minimal Wimey example",
+        .version = "0.1",
+        .log_level = LOG_ALL
+    };
+    wimey_set_config(&cfg);
+
+    // Add inline command
+    wimey_add_command((struct wimey_command_t){
+        .key = "hello",
+        .has_value = true,
+        .is_value_required = true,
+        .value_name = "name",
+        .desc = "Say hello",
+        .callback = [](const char *val) {
+            INFO("Hello, %s!", val);
+        }
+    });
+    // Parse args
+    wimey_parse(argc, argv);
+    // Clean up
+    wimey_free_all();
+    return 0;
+}
+
+```
 
 Please read the [full example here](example.c).
 
@@ -35,7 +69,7 @@ Please read the [full example here](example.c).
   mv wimey.h ~/coding/myproj
   ```
 
-* Inlude header file
+* Inlude header file``
   
   ```c
   /* my_file.c */
@@ -44,22 +78,8 @@ Please read the [full example here](example.c).
   // or with -Iinclude
   #include <wimey.h>
   ```
-  
-  ## Reference
-  
-  ```c
-  int wimey_init(void);
-  int wimey_set_config(struct wimey_config_t *conf);
-  struct wimey_config_t wimey_get_config(void);
-  void wimey_free_all(void);
-  int wimey_parse(int argc, char **argv);
-  int wimey_add_command(struct wimey_command_t cmd);
-  struct __wimey_command_node *wimey_get_commands_head(void);
-  int wimey_add_argument(struct wimey_argument_t argument);
-  struct __wimey_argument_node *wimey_get_arguments_head(void);
-  ```
-  
-  ## Contribute
+
+## Contributions
 
 Please open a [pull request](https://github.com/UsboKirishima/wimey/pulls) or [issue](https://github.com/UsboKirishima/wimey/issues), thanks!
 
